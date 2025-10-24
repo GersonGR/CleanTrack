@@ -1,0 +1,44 @@
+name: Build CleanTrack Windows EXEs
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller demucs torchaudio pedalboard soundfile pysimplegui pydub
+
+      - name: Download Demucs model cache
+        run: |
+          python - <<'PY'
+          from demucs.pretrained import get_model
+          print("Demucs model fetched (name htdemucs).")
+          PY
+
+      - name: Build WAV exe
+        run: pyinstaller --noconfirm --onefile --name CleanTrack_WAV cleantrack_wav.py
+
+      - name: Build MP3 exe
+        run: pyinstaller --noconfirm --onefile --name CleanTrack_MP3 cleantrack_mp3.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cleanttrack-windows-exes
+          path: |
+            dist/CleanTrack_WAV.exe
+            dist/CleanTrack_MP3.exe
